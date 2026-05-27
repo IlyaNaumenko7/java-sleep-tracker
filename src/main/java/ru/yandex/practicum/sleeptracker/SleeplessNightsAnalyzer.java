@@ -2,6 +2,7 @@ package ru.yandex.practicum.sleeptracker;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
@@ -13,21 +14,29 @@ public class SleeplessNightsAnalyzer implements SleepSessionAnalyzer {
             return new SleepAnalysisResult("Sleepless nights", 0);
         }
 
-        LocalDate firstDate = sessions.stream()
+        LocalDateTime firstStart = sessions.stream()
                 .map(SleepSession::getStart)
                 .min(LocalDateTime::compareTo)
-                .orElseThrow()
-                .toLocalDate();
+                .orElseThrow();
 
-        LocalDate lastDate = sessions.stream()
+        LocalDateTime lastEnd = sessions.stream()
                 .map(SleepSession::getEnd)
                 .max(LocalDateTime::compareTo)
-                .orElseThrow()
-                .toLocalDate();
+                .orElseThrow();
 
-        long totalNights = ChronoUnit.DAYS.between(firstDate, lastDate) + 1;
+        // Определяем первую ночь по правилу: до 12:00 — предыдущая, после — следующая
+        LocalDate firstNight = (firstStart.toLocalTime().isBefore(LocalTime.of(12, 0)))
+                ? firstStart.toLocalDate()
+                : firstStart.toLocalDate().plusDays(1);
 
-        long nightsWithSleep = dateRange(firstDate, lastDate.plusDays(1))
+        // Определяем последнюю ночь по тому же правилу
+        LocalDate lastNight = (lastEnd.toLocalTime().isBefore(LocalTime.of(12, 0)))
+                ? lastEnd.toLocalDate()
+                : lastEnd.toLocalDate().plusDays(1);
+
+        long totalNights = ChronoUnit.DAYS.between(firstNight, lastNight) + 1;
+
+        long nightsWithSleep = dateRange(firstNight, lastNight.plusDays(1))
                 .filter(nightDate -> hasSleepDuringNight(sessions, nightDate))
                 .count();
 
@@ -42,8 +51,9 @@ public class SleeplessNightsAnalyzer implements SleepSessionAnalyzer {
     }
 
     private boolean hasSleepDuringNight(List<SleepSession> sessions, LocalDate nightDate) {
+        // Интервал ночи: [nightDate 00:00; nightDate 06:00) — строго один день!
         LocalDateTime nightStart = nightDate.atTime(0, 0);
-        LocalDateTime nightEnd = nightDate.plusDays(1).atTime(6, 0);
+        LocalDateTime nightEnd = nightDate.atTime(6, 0);
 
         return sessions.stream()
                 .anyMatch(session ->

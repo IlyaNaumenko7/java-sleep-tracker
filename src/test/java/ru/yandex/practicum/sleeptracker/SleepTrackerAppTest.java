@@ -43,17 +43,17 @@ class SleepTrackerAppTest {
     void testMaxDurationAnalyzer() {
         List<SleepSession> sessions = List.of(
                 new SleepSession(LocalDateTime.of(2025, 10, 1, 22, 15),
-                        LocalDateTime.of(2025, 10, 2, 8, 0), SleepQuality.GOOD), // 585 мин
+                        LocalDateTime.of(2025, 10, 2, 8, 0), SleepQuality.GOOD),
                 new SleepSession(LocalDateTime.of(2025, 10, 2, 23, 0),
-                        LocalDateTime.of(2025, 10, 3, 8, 0), SleepQuality.NORMAL), // 540 мин
+                        LocalDateTime.of(2025, 10, 3, 8, 0), SleepQuality.NORMAL),
                 new SleepSession(LocalDateTime.of(2025, 10, 3, 14, 30),
-                        LocalDateTime.of(2025, 10, 3, 15, 20), SleepQuality.NORMAL), // 50 мин
+                        LocalDateTime.of(2025, 10, 3, 15, 20), SleepQuality.NORMAL),
                 new SleepSession(LocalDateTime.of(2025, 10, 3, 23, 30),
-                        LocalDateTime.of(2025, 10, 4, 6, 20), SleepQuality.BAD) // 410 мин
+                        LocalDateTime.of(2025, 10, 4, 6, 20), SleepQuality.BAD)
         );
         SleepSessionAnalyzer analyzer = new MaxDurationAnalyzer();
         SleepAnalysisResult result = analyzer.apply(sessions);
-        assertEquals(585, result.getValue()); // <-- должно быть 585, а не 570
+        assertEquals(585, result.getValue());
     }
 
     @Test
@@ -105,9 +105,11 @@ class SleepTrackerAppTest {
 
     @Test
     void testChronotypeAnalyzer_owl() {
+        // СТРОГИЕ границы: начало ПОСЛЕ 23:00, конец ПОСЛЕ 9:00
         List<SleepSession> sessions = List.of(
-                new SleepSession(LocalDateTime.of(2025, 10, 1, 23, 0),
-                        LocalDateTime.of(2025, 10, 2, 9, 30), SleepQuality.GOOD),
+                new SleepSession(LocalDateTime.of(2025, 10, 1, 23, 1),  // 23:01 > 23:00 ✓
+                        LocalDateTime.of(2025, 10, 2, 9, 1),            // 09:01 > 09:00 ✓
+                        SleepQuality.GOOD),
                 new SleepSession(LocalDateTime.of(2025, 10, 2, 0, 0),
                         LocalDateTime.of(2025, 10, 2, 10, 0), SleepQuality.GOOD)
         );
@@ -143,9 +145,9 @@ class SleepTrackerAppTest {
     @Test
     void testChronotypeAnalyzer_tie() {
         List<SleepSession> sessions = List.of(
-                new SleepSession(LocalDateTime.of(2025, 10, 1, 23, 0),
-                        LocalDateTime.of(2025, 10, 2, 9, 0), SleepQuality.GOOD),
-                new SleepSession(LocalDateTime.of(2025, 10, 2, 21, 0),
+                new SleepSession(LocalDateTime.of(2025, 10, 1, 23, 1),  // Owl
+                        LocalDateTime.of(2025, 10, 2, 9, 1), SleepQuality.GOOD),
+                new SleepSession(LocalDateTime.of(2025, 10, 2, 21, 0),  // Lark
                         LocalDateTime.of(2025, 10, 3, 6, 0), SleepQuality.GOOD)
         );
         SleepSessionAnalyzer analyzer = new ChronotypeAnalyzer();

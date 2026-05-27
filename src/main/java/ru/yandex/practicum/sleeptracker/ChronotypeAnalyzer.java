@@ -13,7 +13,6 @@ public class ChronotypeAnalyzer implements SleepSessionAnalyzer {
         counts.put(Chronotype.LARK, 0L);
         counts.put(Chronotype.PIGEON, 0L);
 
-        // Фильтр: учитываем только сессии, пересекающие полночь
         Map<Chronotype, Long> result = sessions.stream()
                 .filter(this::isNightSession)
                 .map(this::getChronotypeForSession)
@@ -23,12 +22,10 @@ public class ChronotypeAnalyzer implements SleepSessionAnalyzer {
                 ));
 
         counts.putAll(result);
-
         Chronotype userChronotype = determineUserChronotype(counts);
         return new SleepAnalysisResult("User chronotype", userChronotype);
     }
 
-    // Ночная сессия: началась в один день, закончилась в другой
     private boolean isNightSession(SleepSession session) {
         return !session.getStart().toLocalDate().equals(session.getEnd().toLocalDate());
     }
@@ -37,17 +34,13 @@ public class ChronotypeAnalyzer implements SleepSessionAnalyzer {
         LocalTime start = session.getStart().toLocalTime();
         LocalTime end = session.getEnd().toLocalTime();
 
-        // Сова: засыпание >= 23:00 И пробуждение >= 9:00
-        boolean isOwlStart = !start.isBefore(LocalTime.of(23, 0));
-        boolean isOwlEnd = !end.isBefore(LocalTime.of(9, 0));
-        if (isOwlStart && isOwlEnd) {
+        // Сова: засыпание СТРОГО ПОСЛЕ 23:00 И пробуждение СТРОГО ПОСЛЕ 9:00
+        if (start.isAfter(LocalTime.of(23, 0)) && end.isAfter(LocalTime.of(9, 0))) {
             return Chronotype.OWL;
         }
 
-        // Жаворонок: засыпание < 22:00 И пробуждение < 7:00
-        boolean isLarkStart = start.isBefore(LocalTime.of(22, 0));
-        boolean isLarkEnd = end.isBefore(LocalTime.of(7, 0));
-        if (isLarkStart && isLarkEnd) {
+        // Жаворонок: засыпание ДО 22:00 И пробуждение ДО 7:00 (строгие)
+        if (start.isBefore(LocalTime.of(22, 0)) && end.isBefore(LocalTime.of(7, 0))) {
             return Chronotype.LARK;
         }
 
@@ -59,7 +52,6 @@ public class ChronotypeAnalyzer implements SleepSessionAnalyzer {
         long larkCount = counts.getOrDefault(Chronotype.LARK, 0L);
         long pigeonCount = counts.getOrDefault(Chronotype.PIGEON, 0L);
 
-        // При равенстве или неопределённости — Голубь
         if (pigeonCount >= owlCount && pigeonCount >= larkCount) {
             return Chronotype.PIGEON;
         }
